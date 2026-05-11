@@ -1,0 +1,90 @@
+/* banit/dashboard/static/css/style.css */
+body { 
+    background-color: #0a0a0a; 
+    color: #00ff41; 
+    font-family: 'Courier New', Courier, monospace; 
+}
+
+.card { 
+    background-color: #121212; 
+    border: 1px solid #00ff4133; 
+    color: white; 
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+}
+
+
+.log-container {
+    height: 450px;
+    overflow-y: auto;
+    border-top: 1px solid #333;
+}
+
+/* Scrollbar'ı da temaya uygun yapalım */
+.log-container::-webkit-scrollbar {
+    width: 8px;
+}
+.log-container::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+.log-container::-webkit-scrollbar-thumb {
+    background: #00ff41;
+    border-radius: 4px;
+}
+
+.table { color: #d1d1d1; }
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #1a1a1a;
+    color: #00ff41;
+    border-bottom: 2px solid #00ff41;
+}
+
+.status-on { 
+    color: #00ff41; 
+    font-weight: bold;
+    text-shadow: 0 0 5px #00ff41;
+    animation: blink 2s infinite; 
+}
+
+@keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.4;} 100% {opacity: 1;} }
+
+
+/* Dönen Daire (Spinner) */
+.spinner {
+    width: 25px;
+    height: 25px;
+    border: 2px solid rgba(0, 255, 65, 0.1);
+    border-top: 4px solid #00ff41;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 3s linear infinite;
+    margin: auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.threat-map {
+    margin-top: 70px;
+    margin-bottom: 70px;
+}
+
+
+
+/* Tablo başlığının ikonların altında kalmaması için */
+thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #1a1a1a; /* Saydam kalmasın, arkadakini örtsün */
+}
+
+.my-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom:20px;
+}
