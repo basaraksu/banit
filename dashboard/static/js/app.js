@@ -51,10 +51,6 @@ async function refreshLogs() {
             `;
         }).join('');
 
-        // Toplam saldırı sayısını güncelle
-        const totalAttacks = document.getElementById('total-attacks');
-        if (totalAttacks) totalAttacks.innerText = logs.length;
-
     } catch (err) {
         console.error("Güncelleme hatası:", err);
     }
@@ -64,6 +60,10 @@ async function updateStats() {
     try {
         const res = await fetch('/api/stats');
         const stats = await res.json();
+
+        // Toplam saldırı sayısını güncelle
+        const totalAttacks = document.getElementById('total-attacks');
+        if (totalAttacks) totalAttacks.innerText = stats.total_attacks;
 
         document.getElementById('top-ip').innerText = stats.top_ip;
         document.getElementById('top-ip-count').innerText = `${stats.top_ip_count} deneme`;

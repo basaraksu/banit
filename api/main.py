@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import sqlite3
 import os
+from pydantic import BaseModel
 
 load_dotenv() # .env dosyasını oku
 
@@ -37,12 +38,23 @@ def get_logs():
 def get_attack_stats():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    
+    # 1. GERÇEK TOPLAM SALDIRI SAYISINI ÇEK (Yeni eklediğimiz kısım)
+    cursor.execute("SELECT COUNT(*) FROM ssh_logs")
+    total_attacks = cursor.fetchone()[0]
+
+    # 2. En aktif saldırgan
     cursor.execute("SELECT ip_address, COUNT(*) as c FROM ssh_logs GROUP BY ip_address ORDER BY c DESC LIMIT 1")
     top_ip = cursor.fetchone() or ("Yok", 0)
+    
+    # 3. En favori hedef
     cursor.execute("SELECT username, COUNT(*) as c FROM ssh_logs GROUP BY username ORDER BY c DESC LIMIT 1")
     top_user = cursor.fetchone() or ("Yok", 0)
+    
     conn.close()
+    
     return {
+        "total_attacks": total_attacks,  # <-- Arayüzün beklediği gerçek sayı burada gidiyor
         "top_ip": top_ip[0], "top_ip_count": top_ip[1],
         "top_user": top_user[0], "top_user_count": top_user[1]
     }
@@ -66,6 +78,16 @@ async def verify_token(request: Request):
         return payload
     except JWTError:
         raise HTTPException(status_code=401, detail="Geçersiz token")
+    
+    
+# Models
+class SettingsUpdate(BaseModel):
+    telegram_token: str
+    telegram_chat_id: str
+    telegram_enabled: bool
+    autoban_enabled: bool
+    autoban_threshold: int    
+
 
 # --- ENDPOINTS (SAYFALAR VE API) ---
 
@@ -100,6 +122,19 @@ async def read_dashboard(request: Request):
         
     return templates.TemplateResponse(request=request, name="index.html", context={"logs": get_logs()})
 
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    # Sayfaya girmeden önce token kontrolü yap (Korumalı sayfa)
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login")
+    try:
+        jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        return RedirectResponse(url="/login")
+        
+    return templates.TemplateResponse(request=request, name="settings.html")
+
 # KORUNAN API'LER (Depends kullandık)
 @app.get("/api/logs")
 async def get_logs_json(user: dict = Depends(verify_token)):
@@ -115,3 +150,44 @@ async def get_logs_json(user: dict = Depends(verify_token)):
 @app.get("/api/stats")
 async def api_stats(user: dict = Depends(verify_token)):
     return get_attack_stats()
+
+
+@app.get("/api/settings")
+async def get_settings(user: dict = Depends(verify_token)):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM settings")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Gelen listeyi sözlüğe (dictionary) çevir
+    settings_dict = {row[0]: row[1] for row in rows}
+    
+    return {
+        "telegram_token": settings_dict.get("telegram_token", ""),
+        "telegram_chat_id": settings_dict.get("telegram_chat_id", ""),
+        # Veritabanında '0' veya '1' string olarak durduğu için Boolean'a çeviriyoruz
+        "telegram_enabled": settings_dict.get("telegram_enabled") == "1",
+        "autoban_enabled": settings_dict.get("autoban_enabled") == "1",
+        "autoban_threshold": int(settings_dict.get("autoban_threshold", 2))
+    }
+
+@app.post("/api/settings")
+async def update_settings(settings: SettingsUpdate, user: dict = Depends(verify_token)):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Key-Value mantığına göre tek tek güncelliyoruz
+    updates = [
+        (settings.telegram_token, 'telegram_token'),
+        (settings.telegram_chat_id, 'telegram_chat_id'),
+        ('1' if settings.telegram_enabled else '0', 'telegram_enabled'),
+        ('1' if settings.autoban_enabled else '0', 'autoban_enabled'),
+        (str(settings.autoban_threshold), 'autoban_threshold')
+    ]
+    
+    cursor.executemany("UPDATE settings SET value = ? WHERE key = ?", updates)
+    conn.commit()
+    conn.close()
+    
+    return {"status": "success", "message": "Ayarlar başarıyla kaydedildi."}

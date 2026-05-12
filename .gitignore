@@ -1,2 +1,10 @@
-.env 
-.venv
+# Python ortamı
+.venv/
+__pycache__/
+
+# Veritabanı dosyaları
+*.db
+*.sqlite3
+
+# Gizli ortam değişkenleri
+.env

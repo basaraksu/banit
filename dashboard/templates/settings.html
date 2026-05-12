@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="tr" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banit | Ayarlar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0a0a0a; color: #e0e0e0; font-family: 'Courier New', Courier, monospace; }
+        .card { background-color: #111; border: 1px solid #333; margin-bottom: 20px; }
+        .card-header { border-bottom: 1px solid #333; font-weight: bold; color: #00ff00; }
+        .form-control { background-color: #000; color: #00ff00; border: 1px solid #333; }
+        .form-control:focus { background-color: #000; border-color: #00ff00; box-shadow: none; color: #00ff00; }
+        .form-switch .form-check-input { cursor: pointer; }
+        .form-switch .form-check-input:checked { background-color: #00ff00; border-color: #00ff00; }
+        .btn-save { background-color: #00ff00; color: #000; font-weight: bold; }
+        .btn-save:hover { background-color: #00cc00; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4" style="max-width: 800px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4>[ BANIT ] - SİSTEM AYARLARI</h4>
+            <div>
+                <a href="/" class="btn btn-sm btn-outline-secondary me-2">Ana Ekrana Dön</a>
+                <button onclick="window.logout()" class="btn btn-sm btn-outline-danger">Çıkış Yap</button>
+            </div>
+        </div>
+
+        <div id="alert-box" class="alert d-none"></div>
+
+        <form id="settings-form">
+            <div class="card">
+                <div class="card-header">🛡️ Aktif Savunma</div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="autoban_enabled">
+                        <label class="form-check-label ms-2" for="autoban_enabled">
+                            <strong>Otomatik Banlamayı Etkinleştir</strong> <br>
+                            <small class="text-muted">Açık olduğunda, sınırı aşan IP'ler iptables ile sunucudan engellenir.</small>
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tolerans Sınırı (Hatalı Deneme Sayısı)</label>
+                        <input type="number" id="autoban_threshold" class="form-control" style="width: 100px;" min="1" max="10">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📱 Telegram İstihbarat Ağı</div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="telegram_enabled">
+                        <label class="form-check-label ms-2" for="telegram_enabled">
+                            <strong>Telegram Botunu Etkinleştir</strong><br>
+                            <small class="text-muted">Ping-Pong sistemi aktifleşir, saldırılar cebine bildirim olarak düşer.</small>
+                        </label>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Bot Token</label>
+                            <input type="text" id="telegram_token" class="form-control" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Chat ID</label>
+                            <input type="text" id="telegram_chat_id" class="form-control" placeholder="123456789">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-save w-100 mb-5">AYARLARI SİSTEME YAZ</button>
+        </form>
+    </div>
+
+    <script>
+        window.logout = function() {
+            document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.href = '/login';
+        };
+    </script>
+    <script src="/static/js/settings.js"></script>
+</body>
+</html>

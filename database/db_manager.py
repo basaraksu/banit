@@ -1,5 +1,7 @@
 import sqlite3
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.intelligence import check_ip_intelligence
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'banit_logs.db')
@@ -45,6 +47,18 @@ def init_db():
             value TEXT
         )
     ''')
+    
+    # Eğer settings tablosu boşsa, varsayılan ayarları (Key-Value) ekle
+    cursor.execute("SELECT COUNT(*) FROM settings")
+    if cursor.fetchone()[0] == 0:
+        default_settings = [
+            ('telegram_token', ''),
+            ('telegram_chat_id', ''),
+            ('telegram_enabled', '0'),
+            ('autoban_enabled', '0'),
+            ('autoban_threshold', '2')
+        ]
+        cursor.executemany("INSERT INTO settings (key, value) VALUES (?, ?)", default_settings)
 
     conn.commit()
     conn.close()
@@ -65,6 +79,46 @@ def add_ssh_log(ip_address, username, password):
         INSERT INTO ssh_logs (ip_address, username, password, is_banned, country_code, risk_score)
         VALUES (?, ?, ?, ?, ?, ?)
     """, (ip_address, username, password, 0, country, risk))
+    conn.commit()
+    conn.close()
+
+
+def get_guardian_settings():
+    """Guardian (Oto-ban) ayarlarını veritabanından çeker."""
+    conn = get_connection() # Senin db dosyasında yazdığın bağlantı fonksiyonu
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM settings WHERE key IN ('autoban_enabled', 'autoban_threshold')")
+    settings = dict(cursor.fetchall())
+    conn.close()
+    
+    return {
+        "autoban_enabled": settings.get("autoban_enabled") == "1",
+        "threshold": int(settings.get("autoban_threshold", 2))
+    }
+
+def get_ip_attempt_count(ip_address):
+    """Bir IP adresinin bugüne kadar kaç kez hatalı giriş yaptığını sayar."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM ssh_logs WHERE ip_address = ?", (ip_address,))
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
+
+def is_ip_already_banned(ip_address):
+    """Bu IP daha önce banlanmış mı diye kontrol eder (Çifte ban atmamak için)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_banned FROM ssh_logs WHERE ip_address = ? LIMIT 1", (ip_address,))
+    row = cursor.fetchone()
+    conn.close()
+    return row and row[0] == 1
+
+def set_ip_banned(ip_address):
+    """Başarıyla banlanan IP'nin veritabanındaki durumunu 1 (Banlı) yapar."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE ssh_logs SET is_banned = 1 WHERE ip_address = ?", (ip_address,))
     conn.commit()
     conn.close()
 
